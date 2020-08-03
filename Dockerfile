@@ -27,11 +27,9 @@ RUN pip3 install --prefix="$CGP_OPT/python-lib" dist/$(ls -1 dist/)
 
 FROM ubuntu:20.04
 
-ARG VERSION
-
 LABEL maintainer="cgphelp@sanger.ac.uk" \
       uk.ac.sanger.cgp="Cancer, Ageing and Somatic Mutation, Wellcome Trust Sanger Institute" \
-      version=$VERSION \
+      version="2.0.0" \
       description="crisprReadCounts docker container"
 
 RUN apt-get -yq update
@@ -63,7 +61,10 @@ COPY --from=builder $CGP_OPT $CGP_OPT
 ## USER CONFIGURATION
 RUN adduser --disabled-password --gecos '' ubuntu && chsh -s /bin/bash && mkdir -p /home/ubuntu
 
-USER    ubuntu
+USER ubuntu
 WORKDIR /home/ubuntu
+# Add a VERSION file into the container, jsut another way to veriry which version of code is in this container
+COPY crispr_read_counts/version.py .
+RUN echo $(grep 'version=' version.py | cut -d "'" -f 2) > VERSION && rm version.py
 
 CMD ["/bin/bash"]
