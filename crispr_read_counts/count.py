@@ -218,25 +218,12 @@ def count_dual(args):
           classified_reads.write('\t'.join(['MISS', 'nothing_nothing', args['sample'], read_id, r1, r2, 'NA']) + '\n')
 
   read_counts = (line_index + 1)/4
-  with open(args['stats'], 'w') as stats_out:
-    stats_out.write(
-      '\t'.join(
-        ['sample', 'total_reads', 'miss', 'mismatch', 'gRNA1_hits', 'gRNA2_hits', 'safe_safe', 'gRNA1_safe', 'safe_gRNA2', 'gRNA1_gRNA2']
-      ) + '\n')
-    stats_out.write('\t'.join(
-      [
-        args['sample'],
-        *[
-          str(int(number)) for number in
-          [read_counts, n_miss_miss, n_incorrect_pair, n_grna1, n_grna2, n_safe_safe, n_grna1_safe, n_safe_grna2, n_grna1_grna2]
-        ]
-      ]
-    ) + '\n')
 
+  total_guides, zero_guide, less_30_guides = 0, 0, 0
   with open(args['library'], 'r') as lib, open(args['counts'], 'w') as out_count:
     next(lib)
     out_count.write('\t'.join(['unique_id', 'target_id', 'gene_pair_id', 'sample_name']) + '\n')
-    for line in lib:
+    for lib_line_index, line in enumerate(lib):
       ele = line.strip().split('\t')
       sgSeqL =ele[header_index['sgrna_left_seq']]
       sgSeqR = ele[header_index['sgrna_right_seq']]
@@ -246,7 +233,28 @@ def count_dual(args):
       sgSeqLrc = rev_compl(sgSeqL)
       counts =lookupGuidePair[sgSeqLrc + sgSeqR]
       out_count.write( '\t'.join([unique_pair_id, target_pair_id, gene_pair_id, str(counts)]) + '\n')
+      if counts == 0:
+        zero_guides += 1
+      if counts < 30:
+        less_30_guides += 1
 
+  total_guides = lib_line_index + 1
+  with open(args['stats'], 'w') as stats_out:
+    stats_out.write(
+      '\t'.join(
+        ['sample', 'total_reads', 'miss', 'mismatch', 'gRNA1_hits', 'gRNA2_hits',
+          'safe_safe', 'gRNA1_safe', 'safe_gRNA2', 'gRNA1_gRNA2', 'total_guides', 'zero_guides', 'less_30_guides']
+      ) + '\n')
+    stats_out.write('\t'.join(
+      [
+        args['sample'],
+        *[
+          str(int(number)) for number in
+          [read_counts, n_miss_miss, n_incorrect_pair, n_grna1, n_grna2,
+            n_safe_safe, n_grna1_safe, n_safe_grna2, n_grna1_grna2, total_guides, zero_guides, less_30_guides]
+        ]
+      ]
+    ) + '\n')
 
 def rev_compl(dna: str):
   trans_dict = {65: 84, 67: 71, 71: 67, 84: 65, 97: 116, 99: 103, 103: 99, 116: 97}
