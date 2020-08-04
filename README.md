@@ -4,7 +4,9 @@ Gets CRISPR read counts from cram files and merges readcounts from multiple read
 
 | Master | Dev |
 |---|---|
-|  [![Build Status](https://travis-ci.org/cancerit/crisprReadCounts.svg?branch=master)](https://travis-ci.org/cancerit/crisprReadCounts) | [![Build Status](https://travis-ci.org/cancerit/crisprReadCounts.svg?branch=develop)](https://travis-ci.org/cancerit/crisprReadCounts) |
+|  [![Build Status](https://travis-ci.org/cancerit/crisprReadCountsPy.svg?branch=master)](https://travis-ci.org/cancerit/crisprReadCountsPy) | [![Build Status](https://travis-ci.org/cancerit/crisprReadCountsPy.svg?branch=develop)](https://travis-ci.org/cancerit/crisprReadCountsPy) |
+
+[![Docker Repository on Quay](https://quay.io/repository/wtsicgp/crisprreadcounts_py/status "Docker Repository on Quay")](https://quay.io/repository/wtsicgp/crisprreadcounts_py)
 
 ## Usage
 
@@ -18,7 +20,7 @@ crisprReadCounts --help
 
 ```
 VERSION=X.X.X
-pip install https://github.com/cancerit/crisprReadCounts/archive/${VERSION}.tar.gz
+pip install https://github.com/cancerit/crisprReadCountsPy/archive/${VERSION}.tar.gz
 ```
 
 ## Development environment
