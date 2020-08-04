@@ -23,7 +23,7 @@ def count_single(args: Dict[str, Any]):
 
   with open(args['output'], 'w') as f:
     if plas_name:
-      f.write('\t'.join(['sgRNA', 'gene', f'{sample_name}.sample', f'{plas_name}.plasmid']) + '\n')
+      f.write('\t'.join(['sgRNA', 'gene', f'{sample_name}.sample', plas_name]) + '\n')
       for sgrna_seq in (sorted(lib.keys())):
         for sgrna_id in lib[sgrna_seq]['ids']:
           count = sample.get(sgrna_id, 0)
