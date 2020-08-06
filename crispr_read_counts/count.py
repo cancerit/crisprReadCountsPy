@@ -219,7 +219,7 @@ def count_dual(args):
 
   read_counts = (line_index + 1)/4
 
-  total_guides, zero_guide, less_30_guides = 0, 0, 0
+  total_guides, zero_guides, less_30_guides = 0, 0, 0
   with open(args['library'], 'r') as lib, open(args['counts'], 'w') as out_count:
     next(lib)
     out_count.write('\t'.join(['unique_id', 'target_id', 'gene_pair_id', 'sample_name']) + '\n')
