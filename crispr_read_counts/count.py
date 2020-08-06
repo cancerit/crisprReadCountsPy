@@ -13,7 +13,7 @@ def count_single(args: Dict[str, Any]):
 
   # TODO: validate inputs before doing anything
 
-  lib, targeted_genes = get_singe_guide_library(args['library'])
+  lib, targeted_genes = get_single_guide_library(args['library'])
 
   plasmid, plas_name = None, None
   if args['plasmid']:
@@ -37,7 +37,7 @@ def count_single(args: Dict[str, Any]):
           f.write('\t'.join([sgrna_id, targeted_genes[sgrna_id], str(count)]) + '\n')
 
 
-def get_singe_guide_library(lib_file: str):
+def get_single_guide_library(lib_file: str):
   lib = {}
   targeted_genes = {}
 
