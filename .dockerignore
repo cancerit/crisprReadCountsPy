@@ -1,0 +1,9 @@
+/LICENCE
+/INSTALL
+/CHANGES.md
+/.gitignore
+/.git
+/.travis.yml
+/env
+/dist
+/.vscode
