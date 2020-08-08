@@ -12,19 +12,15 @@ def cli():
 @cli.command()
 @click.option(
   # TODO: it should not be "dir", but perl code used the word, change it in later version.
-  '--dir', '-i',
+  '--input', '-i',
   metavar='FILE',
   required=True,
   help='Input sample CRAM file.')
-@click.option(
-  '--plasmid', '-p',
-  metavar='FILE',
-  help='Plasmid count tsv file.')
 @click.option(
   '--library', '-l',
   metavar='FILE',
   required=True,
-  help='Input sample CRAM file.')
+  help='Input single guide library file, comma delimited.')
 @click.option(
   '--output', '-o',
   metavar='FILE',
@@ -34,17 +30,25 @@ def cli():
   '--ref', '-r',
   metavar='FILE',
   required=True,
-  help='Genome reference FASTA (e.g.: genome.fa) file.')
+  help='Genome reference FASTA (e.g.: genome.fa) file for reading the input CRAM file.')
 @click.option(
   '--trim', '-t',
   metavar='INT',
   default=0,
   help='Remove N bases of leading sequence.')
 @click.option(
+  '--plasmid', '-p',
+  metavar='FILE',
+  help='Plasmid count tsv file.')
+@click.option(
   '--reverse-complement', '-rc',
   default=False,
   is_flag=True,
   help='Reverse complementing reads when mapping to guide sequences (reads are reverse complemented prior to trimming).')
+@click.option(
+  '--stats', '-s',
+  metavar='FILE',
+  help='Output file path of QC stats in JSON format.')
 def count_single(**kwargs):
   from .count import count_single
   count_single(kwargs)
@@ -87,7 +91,7 @@ def count_single(**kwargs):
   required=True,
   help='Output read counts result file.')
 def count_dual(**kwargs):
-  from .count import count_dual
+  from .dual_guide import count_dual
   count_dual(kwargs)
 
 
