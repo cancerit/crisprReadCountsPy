@@ -1,5 +1,5 @@
 import sys
-from . import error_msg, open_plain_or_gzipped_file, PLASMID_COUNT_HEADER
+from .utils import error_msg, open_plain_or_gzipped_file, PLASMID_COUNT_HEADER
 from typing import TextIO
 
 def merge_single(args):
