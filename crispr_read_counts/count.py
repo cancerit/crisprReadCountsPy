@@ -14,6 +14,12 @@ import json
 
 def count_single(args: Dict[str, Any]):
   # validate inputs before doing anything
+  check_input_files(args)
+  count_instance = SingleGuideReadCounts(args['library'], args['input'], args['output'], args['ref'])
+  count_instance.count(args['trim'], args['plasmid'], args['reverse_complement'], args['stats'])
+
+
+def check_input_files(args: Dict[str, Any]):
   if not check_file_readable(args['library']):
     sys.exit(error_msg('Provided library file does not exist or have no permission to read: %s' % {args['library']}))
   if not check_file_readable(args['input']):
@@ -26,9 +32,6 @@ def count_single(args: Dict[str, Any]):
     sys.exit(error_msg('Cannot write to provided output count file: {}' % args['output']))
   if args['stats'] and not check_file_writable(args['stats']):
     sys.exit(error_msg('Cannot write to provided output stats file: {}' % args['stats']))
-
-  count_instance = SingleGuideReadCounts(args['library'], args['input'], args['output'], args['ref'])
-  count_instance.count(args['trim'], args['plasmid'], args['reverse_complement'], args['stats'])
 
 
 class SingleGuideReadCounts():
@@ -105,7 +108,11 @@ class SingleGuideReadCounts():
 
       total_reads += 1
       if reverse_complementing:
-        cram_seq = read.get_forward_sequence()[-trim-lib_seq_size:-trim]
+        # NOTE: it could be as simple as this: cram_seq = read.get_forward_sequence()[-trim-lib_seq_size:-trim]
+        # but when trim is 0, end index will be "-0", and this will upset python and return an empty string.
+        # so, trim is always added by 1, and the substring became a bit complicated like below.
+        cram_seq = read.get_forward_sequence()
+        cram_seq = cram_seq[-(trim+1)-(lib_seq_size-1):-(trim+1)] + cram_seq[-(trim+1)]
       else:
         cram_seq = read.get_forward_sequence()[trim:trim+lib_seq_size]
 
@@ -123,6 +130,8 @@ class SingleGuideReadCounts():
 
     samfile = self.open_cram_and_get_sample_name()
     lib_seqs, lib_seq_size = self.get_lib_seq_dict_and_seq_length(reverse_complementing)
+    print(lib_seqs)
+    print(lib_seq_size)
 
     for read in samfile.fetch(until_eof=True):
       # if the alignment is secondary, supplymentary or  vendor failed, skip it!
@@ -130,7 +139,11 @@ class SingleGuideReadCounts():
         continue
 
       if reverse_complementing:
-        cram_seq = read.get_forward_sequence()[-trim-lib_seq_size:-trim]
+        # NOTE: it could be as simple as this: cram_seq = read.get_forward_sequence()[-trim-lib_seq_size:-trim]
+        # but when trim is 0, end index will be "-0", and this will upset python and return an empty string.
+        # so, trim is always added by 1, and the substring became a bit complicated like below.
+        cram_seq = read.get_forward_sequence()
+        cram_seq = cram_seq[-(trim+1)-(lib_seq_size-1):-(trim+1)] + cram_seq[-(trim+1)]
       else:
         cram_seq = read.get_forward_sequence()[trim:trim+lib_seq_size]
 
@@ -138,6 +151,7 @@ class SingleGuideReadCounts():
       if matching_lib_seq:
         for grna_id in self.lib[matching_lib_seq]:
           self.sample_count[grna_id] = self.sample_count.get(grna_id, 0) + 1
+    print(self.sample_count)
 
   def write_output(self, out_stats: str):
     if out_stats:
