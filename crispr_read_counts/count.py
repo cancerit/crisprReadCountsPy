@@ -130,8 +130,6 @@ class SingleGuideReadCounts():
 
     samfile = self.open_cram_and_get_sample_name()
     lib_seqs, lib_seq_size = self.get_lib_seq_dict_and_seq_length(reverse_complementing)
-    print(lib_seqs)
-    print(lib_seq_size)
 
     for read in samfile.fetch(until_eof=True):
       # if the alignment is secondary, supplymentary or  vendor failed, skip it!
@@ -151,7 +149,6 @@ class SingleGuideReadCounts():
       if matching_lib_seq:
         for grna_id in self.lib[matching_lib_seq]:
           self.sample_count[grna_id] = self.sample_count.get(grna_id, 0) + 1
-    print(self.sample_count)
 
   def write_output(self, out_stats: str):
     if out_stats:
