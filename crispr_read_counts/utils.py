@@ -9,11 +9,20 @@ SAFE_SEQ_FORMAT = re.compile(r'^F\d+$')
 
 
 def error_msg(msg: str):
-  return f'#------\n# Error: {msg}\n#------'
+  return f'#------\n# Error: {process_multiple_lines(msg)}\n#------'
 
 
 def warning_msg(msg: str):
-  return f'#------\n# Warning: {msg}\n#------'
+  return f'#------\n# Warning: {process_multiple_lines(msg)}\n#------'
+
+
+def process_multiple_lines(msg):
+  return "\n".join(
+    [
+      line if index == 0 else '# ' + line
+      for index, line in enumerate(msg.split('\n'))
+    ]
+  )
 
 
 @contextmanager
