@@ -8,12 +8,13 @@ def merge_single(args):
   with open(args['output'], 'w') as out:
     if has_plasmid:
       out.write('\t'.join(['sgRNA', 'gene', samp_name, plas_name]) + '\n')
-      for id in sorted(sample_rc.keys()):
+      for id in sample_rc.keys():
         out.write('\t'.join([id, genes[id], str(sample_rc[id]), str(plasmid_rc[id])]) + '\n')
     else:
       out.write('\t'.join(['sgRNA', 'gene', samp_name]) + '\n')
-      for id in sorted(sample_rc.keys()):
+      for id in sample_rc.keys():
         out.write('\t'.join([id, genes[id], str(sample_rc[id])]) + '\n')
+  print('Done.')
 
 
 def get_sample_read_counts(in_files_string: str, has_plasmid: bool):
@@ -22,13 +23,20 @@ def get_sample_read_counts(in_files_string: str, has_plasmid: bool):
 
   files = in_files_string.split(',')
   for a_file in files:
-    print(a_file)
+    print(f'reading from {a_file}...')
     with open_plain_or_gzipped_file(a_file) as in_f:
       header = in_f.readline()
       if PLASMID_COUNT_HEADER.match(header):
         data = header.strip().split('\t')
         sample_name = data[2]
-        plasmid_name = data[3] if has_plasmid else None
+        if has_plasmid:
+          if len(data) < 4:
+            sys.exit(error_msg(f'Can not find plasmid count column in input file: {a_file}.\nProbably should remove option "--plasmid"?'))
+          if plasmid_name is None:
+            plasmid_name = data[3]
+          elif plasmid_name != data[3]:
+            # files should have same plasmid sample name
+            sys.exit(error_msg(f'Plasmid sample names is different in this file: {a_file} from in file: {files[0]}'))
       else:
         sys.exit(error_msg(f'Unexpected header in input file: {a_file}'))
 
@@ -40,7 +48,10 @@ def get_sample_read_counts(in_files_string: str, has_plasmid: bool):
             sample_count = sample.get(id, 0) + int(data[2])
             sample[id] = sample_count
             targeted_genes[id] = data[1]
-            plasmid[id] = int(data[3])
+            if id in plasmid and int(data[3]) != plasmid[id]:
+              sys.exit(error_msg(f'Plasmid count of sgRNA: {id} is not consistent across input count files.'))
+            else:
+              plasmid[id] = int(data[3])
         else:
           for line in in_f:
             data = line.strip().split('\t')
