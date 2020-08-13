@@ -29,9 +29,9 @@ def check_input_files(args: Dict[str, Any]):
   if args['plasmid'] and not check_file_readable(args['plasmid']):
     sys.exit(error_msg('Provided plasmid count file does not exist or have no permission to read: %s' % args['plasmid']))
   if not check_file_writable(args['output']):
-    sys.exit(error_msg('Cannot write to provided output count file: {}' % args['output']))
+    sys.exit(error_msg('Cannot write to provided output count file: %s' % args['output']))
   if args['stats'] and not check_file_writable(args['stats']):
-    sys.exit(error_msg('Cannot write to provided output stats file: {}' % args['stats']))
+    sys.exit(error_msg('Cannot write to provided output stats file: %s' % args['stats']))
 
 
 class SingleGuideReadCounts():

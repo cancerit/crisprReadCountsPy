@@ -50,7 +50,7 @@ def cli():
   metavar='FILE',
   help='Output file path of QC stats in JSON format.')
 def count_single(**kwargs):
-  from .count import count_single
+  from .single_guide_count import count_single
   count_single(kwargs)
 
 
@@ -91,7 +91,7 @@ def count_single(**kwargs):
   required=True,
   help='Output read counts result file.')
 def count_dual(**kwargs):
-  from .dual_guide import count_dual
+  from .dual_guide_count import count_dual
   count_dual(kwargs)
 
 
@@ -112,7 +112,7 @@ def count_dual(**kwargs):
   is_flag=True,
   help='Has plasmid counts.')
 def merge_single(**kwargs):
-  from .merge import merge_single
+  from .single_guide_merge import merge_single
   merge_single(kwargs)
 
 

@@ -179,7 +179,7 @@ def write_guides_return_stats(library: str, out_counts: str, lookupGuidePair, he
       unique_pair_id = ele[header_index['unique_id']]
       target_pair_id = ele[header_index['target_id']]
       sgSeqLrc = rev_compl(sgSeqL)
-      counts =lookupGuidePair[sgSeqLrc + sgSeqR]
+      counts = lookupGuidePair[sgSeqLrc + sgSeqR]
       out_ct.write( '\t'.join([unique_pair_id, target_pair_id, gene_pair_id, str(counts)]) + '\n')
       if counts == 0:
         zero_guides += 1
