@@ -2,6 +2,7 @@ import sys
 from .utils import error_msg, open_plain_or_gzipped_file, PLASMID_COUNT_HEADER
 from typing import TextIO
 
+
 def merge_single(args):
   has_plasmid = args['plasmid']
   samp_name, plas_name, sample_rc, plasmid_rc, genes = get_sample_read_counts(args['input'], has_plasmid)

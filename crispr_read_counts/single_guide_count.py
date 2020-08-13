@@ -66,7 +66,7 @@ class SingleGuideReadCounts():
     except Exception as e:
       sys.exit(error_msg('Unexpected exception when trying to open input CRAM file: %s' % str(e)))
 
-    for rg in samfile.header.to_dict().get('RG'): # does not matter which RG line's SM tag is used
+    for rg in samfile.header.to_dict().get('RG'):  # does not matter which RG line's SM tag is used
       self.sample_name = rg.get('SM')
     if not self.sample_name:
       sys.exit(error_msg('Could not find "SM" tag in the input file header'))
@@ -112,9 +112,9 @@ class SingleGuideReadCounts():
         # but when trim is 0, end index will be "-0", and this will upset python and return an empty string.
         # so, trim is always added by 1, and the substring became a bit complicated like below.
         cram_seq = read.get_forward_sequence()
-        cram_seq = cram_seq[-(trim+1)-(lib_seq_size-1):-(trim+1)] + cram_seq[-(trim+1)]
+        cram_seq = cram_seq[-(trim + 1) - (lib_seq_size - 1):-(trim + 1)] + cram_seq[-(trim + 1)]
       else:
-        cram_seq = read.get_forward_sequence()[trim:trim+lib_seq_size]
+        cram_seq = read.get_forward_sequence()[trim:trim + lib_seq_size]
 
       matching_lib_seq = lib_seqs.get(cram_seq)
       if matching_lib_seq:
@@ -141,9 +141,9 @@ class SingleGuideReadCounts():
         # but when trim is 0, end index will be "-0", and this will upset python and return an empty string.
         # so, trim is always added by 1, and the substring became a bit complicated like below.
         cram_seq = read.get_forward_sequence()
-        cram_seq = cram_seq[-(trim+1)-(lib_seq_size-1):-(trim+1)] + cram_seq[-(trim+1)]
+        cram_seq = cram_seq[-(trim + 1) - (lib_seq_size - 1):-(trim + 1)] + cram_seq[-(trim + 1)]
       else:
-        cram_seq = read.get_forward_sequence()[trim:trim+lib_seq_size]
+        cram_seq = read.get_forward_sequence()[trim:trim + lib_seq_size]
 
       matching_lib_seq = lib_seqs.get(cram_seq)
       if matching_lib_seq:
