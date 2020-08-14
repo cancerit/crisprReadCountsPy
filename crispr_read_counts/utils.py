@@ -7,6 +7,12 @@ PLASMID_COUNT_HEADER = re.compile(r'^sgRNA\tgene', flags=re.I)
 DNA_PATTERN = re.compile(r'^[ATGC]+$', flags=re.I)
 SAFE_SEQ_FORMAT = re.compile(r'^F\d+$')
 
+dna_complement_tr_table = str.maketrans('ACGTacgt', 'TGCAtgca')
+
+
+def rev_compl(dna: str) -> str:
+    return dna[::-1].translate(dna_complement_tr_table)
+
 
 def error_msg(msg: str):
   return f'#------\n# Error: {process_multiple_lines(msg)}\n#------'
@@ -35,11 +41,6 @@ def open_plain_or_gzipped_file(file: str):
         yield f
     finally:
         f.close()
-
-
-def rev_compl(dna: str):
-  trans_dict = {65: 84, 67: 71, 71: 67, 84: 65, 97: 116, 99: 103, 103: 99, 116: 97}
-  return ''.join(reversed(dna)).translate(trans_dict)
 
 
 def check_file_readable(fn):

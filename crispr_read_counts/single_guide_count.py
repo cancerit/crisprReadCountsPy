@@ -10,6 +10,11 @@ from .utils import (
   check_file_writable)
 import pysam
 import json
+import csv
+
+csv.register_dialect('sg_library', delimiter=',', quoting=csv.QUOTE_NONE)
+csv.register_dialect('sg_plasmid_count', delimiter='\t', quoting=csv.QUOTE_NONE)
+csv.register_dialect('sg_out_count', delimiter='\t', quoting=csv.QUOTE_NONE)
 
 
 def count_single(args: Dict[str, Any]):
@@ -52,12 +57,6 @@ class SingleGuideReadCounts():
     self.sample_name = None
     self.stats = {}
 
-  def get_sgrna_library_counts(self, trim: int, reverse_complementing: bool, with_stats: bool):
-    if with_stats:
-      self._get_sgrna_library_counts_with_stats(trim, reverse_complementing)
-    else:
-      self._get_sgrna_library_counts_without_stats(trim, reverse_complementing)
-
   def open_cram_and_get_sample_name(self):
     if not self.ref:
       sys.exit(error_msg(f'Reference file must be provided for reading a CRAM file.'))
@@ -88,12 +87,16 @@ class SingleGuideReadCounts():
 
     return lib_seqs, lib_seq_size
 
-  def _get_sgrna_library_counts_with_stats(self, trim: int, reverse_complementing: bool):
-
+  def get_sgrna_library_counts(self, trim: int, reverse_complementing: bool):
+    '''
+    # NOTE: Stats are calculated regardless whether they're required or not in order to achieve better code maintainability.
+    # From limited benchmarking runs, this only increase ~2% run time with 11 million reads as input.
+    '''
     total_reads, vendor_failed_reads, mapped_to_guide_reads = 0, 0, 0
 
     samfile = self.open_cram_and_get_sample_name()
     lib_seqs, lib_seq_size = self.get_lib_seq_dict_and_seq_length(reverse_complementing)
+    sl = self.get_seq_slicing_indexes(reverse_complementing, trim, lib_seq_size)
 
     for read in samfile.fetch(until_eof=True):
       # if the alignment is secondary or supplymentary, skip it!
@@ -107,14 +110,7 @@ class SingleGuideReadCounts():
         continue
 
       total_reads += 1
-      if reverse_complementing:
-        # NOTE: it could be as simple as this: cram_seq = read.get_forward_sequence()[-trim-lib_seq_size:-trim]
-        # but when trim is 0, end index will be "-0", and this will upset python and return an empty string.
-        # so, trim is always added by 1, and the substring became a bit complicated like below.
-        cram_seq = read.get_forward_sequence()
-        cram_seq = cram_seq[-(trim + 1) - (lib_seq_size - 1):-(trim + 1)] + cram_seq[-(trim + 1)]
-      else:
-        cram_seq = read.get_forward_sequence()[trim:trim + lib_seq_size]
+      cram_seq = read.get_forward_sequence()[sl]
 
       matching_lib_seq = lib_seqs.get(cram_seq)
       if matching_lib_seq:
@@ -126,42 +122,13 @@ class SingleGuideReadCounts():
     self.stats['vendor_failed_reads'] = vendor_failed_reads
     self.stats['mapped_to_guide_reads'] = mapped_to_guide_reads
 
-  def _get_sgrna_library_counts_without_stats(self, trim: int, reverse_complementing: bool):
-
-    samfile = self.open_cram_and_get_sample_name()
-    lib_seqs, lib_seq_size = self.get_lib_seq_dict_and_seq_length(reverse_complementing)
-
-    for read in samfile.fetch(until_eof=True):
-      # if the alignment is secondary, supplymentary or  vendor failed, skip it!
-      if read.flag & 2816:
-        continue
-
-      if reverse_complementing:
-        # NOTE: it could be as simple as this: cram_seq = read.get_forward_sequence()[-trim-lib_seq_size:-trim]
-        # but when trim is 0, end index will be "-0", and this will upset python and return an empty string.
-        # so, trim is always added by 1, and the substring became a bit complicated like below.
-        cram_seq = read.get_forward_sequence()
-        cram_seq = cram_seq[-(trim + 1) - (lib_seq_size - 1):-(trim + 1)] + cram_seq[-(trim + 1)]
-      else:
-        cram_seq = read.get_forward_sequence()[trim:trim + lib_seq_size]
-
-      matching_lib_seq = lib_seqs.get(cram_seq)
-      if matching_lib_seq:
-        for grna_id in self.lib[matching_lib_seq]:
-          self.sample_count[grna_id] = self.sample_count.get(grna_id, 0) + 1
-
   def write_output(self, out_stats: str):
-    if out_stats:
-      self._write_output_with_stats(out_stats)
-    else:
-      self._write_output_without_stats()
-
-  def _write_output_with_stats(self, out_stats: str):
     zero_count_guides, low_count_guides = 0, 0
-    with open(self.out_count, 'w') as f:
+    with open(self.out_count, 'w', newline='') as f:
+      writer = csv.writer(f, 'sg_out_count')
       if self.plas_name:
-        f.write('\t'.join(['sgRNA', 'gene', f'{self.sample_name}.sample', self.plas_name]) + '\n')
-        for sgrna_seq in (sorted(self.lib.keys())):
+        writer.writerow(['sgRNA', 'gene', f'{self.sample_name}.sample', self.plas_name])
+        for sgrna_seq in sorted(self.lib.keys()):
           for sgrna_id in self.lib[sgrna_seq]:
             count = self.sample_count.get(sgrna_id, 0)
             if count == 0:
@@ -169,44 +136,29 @@ class SingleGuideReadCounts():
             if count < self.LOW_COUNT_GUIDES_THRESHOLD:
               low_count_guides += 1
             plasmid_count = self.plasmid.get(sgrna_id, 0)
-            f.write('\t'.join([sgrna_id, self.targeted_genes[sgrna_id], str(count), str(plasmid_count)]) + '\n')
+            writer.writerow([sgrna_id, self.targeted_genes[sgrna_id], str(count), str(plasmid_count)])
       else:
-        f.write('\t'.join(['sgRNA', 'gene', f'{self.sample_name}.sample']) + '\n')
-        for sgrna_seq in (sorted(self.lib.keys())):
+        writer.writerow(['sgRNA', 'gene', f'{self.sample_name}.sample'])
+        for sgrna_seq in sorted(self.lib.keys()):
           for sgrna_id in self.lib[sgrna_seq]:
             count = self.sample_count.get(sgrna_id, 0)
             if count == 0:
               zero_count_guides += 1
             if count < self.LOW_COUNT_GUIDES_THRESHOLD:
               low_count_guides += 1
-            f.write('\t'.join([sgrna_id, self.targeted_genes[sgrna_id], str(count)]) + '\n')
+            writer.writerow([sgrna_id, self.targeted_genes[sgrna_id], str(count)])
 
-    self.stats['zero_count_guides'] = zero_count_guides
-    self.stats['low_count_guides'] = low_count_guides
-    with open(out_stats, 'w') as out_s:
-      json.dump(self.stats, out_s)
-      out_s.write('\n')
-
-  def _write_output_without_stats(self):
-    with open(self.out_count, 'w') as f:
-      if self.plas_name:
-        f.write('\t'.join(['sgRNA', 'gene', f'{self.sample_name}.sample', self.plas_name]) + '\n')
-        for sgrna_seq in (sorted(self.lib.keys())):
-          for sgrna_id in self.lib[sgrna_seq]:
-            count = self.sample_count.get(sgrna_id, 0)
-            plasmid_count = self.plasmid.get(sgrna_id, 0)
-            f.write('\t'.join([sgrna_id, self.targeted_genes[sgrna_id], str(count), str(plasmid_count)]) + '\n')
-      else:
-        f.write('\t'.join(['sgRNA', 'gene', f'{self.sample_name}.sample']) + '\n')
-        for sgrna_seq in (sorted(self.lib.keys())):
-          for sgrna_id in self.lib[sgrna_seq]:
-            count = self.sample_count.get(sgrna_id, 0)
-            f.write('\t'.join([sgrna_id, self.targeted_genes[sgrna_id], str(count)]) + '\n')
+    if out_stats:
+      self.stats['zero_count_guides'] = zero_count_guides
+      self.stats['low_count_guides'] = low_count_guides
+      with open(out_stats, 'w') as out_s:
+        json.dump(self.stats, out_s)
+        out_s.write('\n')
 
   def count(self, trim, plasmid_count_file, reverse_complement, out_stats):
     if plasmid_count_file:
       self.plasmid, self.plas_name = self.get_plasmid_read_counts(plasmid_count_file)
-    self.get_sgrna_library_counts(trim, reverse_complement, bool(out_stats))
+    self.get_sgrna_library_counts(trim, reverse_complement)
     self.write_output(out_stats)
 
   @staticmethod
@@ -215,13 +167,13 @@ class SingleGuideReadCounts():
     targeted_genes = {}
 
     with open(lib_file, 'r') as f:
-      for line_count, line in enumerate(f):
-        ele = line.strip().split(',')
-        if len(ele) < 3:
-          sys.exit(error_msg(f'Guide RNA library file line: {line_count + 1} does not have 3 columns, or the file uses execpted delimiter.'))
-        sgrna_id, gene_name, lib_seq = ele[0], ele[1], ele[2]
+      reader = csv.reader(f, 'sg_library')
+      for line_number, line_split in enumerate(reader, 1):
+        if len(line_split) < 3:
+          sys.exit(error_msg(f'Guide RNA library file line: {line_number} does not have 3 columns, or the file uses expected delimiter.'))
+        sgrna_id, gene_name, lib_seq = line_split[0], line_split[1], line_split[2]
         if not DNA_PATTERN.match(lib_seq):
-          sys.exit(error_msg(f'Sequence column contains non-DNA characters on line: {line_count}.'))
+          sys.exit(error_msg(f'Sequence column contains non-DNA characters on line: {line_number}.'))
 
         if lib_seq in lib:
           lib[lib_seq].append(sgrna_id)
@@ -234,16 +186,28 @@ class SingleGuideReadCounts():
 
   @staticmethod
   def get_plasmid_read_counts(plasmid_file: str):
-    plasmid, plasmid_name = {}, {}
+    plasmid = {}
+    plasmid_name = None
     with open(plasmid_file, 'r') as f:
-      for line_count, line in enumerate(f):
-        ele = line.strip().split('\t')
-        if len(ele) < 3:
-          sys.exit(error_msg(f'Plasmid count file line: {line_count + 1} does not have 3 columns, or the file uses execpted delimiter.'))
-        if PLASMID_COUNT_HEADER.match(line):
-          plasmid_name = ele[2]
+      reader = csv.reader(f, 'sg_plasmid_count')
+      for line_number, line_split in enumerate(reader, 1):
+        if len(line_split) < 3:
+          sys.exit(error_msg(f'Plasmid count file line: {line_number} does not have 3 columns, or the file uses expected delimiter.'))
+        if line_number == 1:
+          if PLASMID_COUNT_HEADER.match('\t'.join(line_split)):
+            plasmid_name = line_split[2]
+          else:
+            sys.exit(error_msg(f'Plasmid count file does not have expected header.'))
         else:
-          sgrna_id, count = ele[0], ele[2]
+          sgrna_id, count = line_split[0], line_split[2]
           plasmid[sgrna_id] = count
 
     return plasmid, plasmid_name
+
+  @staticmethod
+  def get_seq_slicing_indexes(reverse_complementing, trim, lib_seq_size):
+    return (
+      slice(trim, trim + lib_seq_size) if not reverse_complementing else
+      slice(-trim - lib_seq_size, -trim) if trim > 0 else
+      slice(-lib_seq_size, None)
+    )

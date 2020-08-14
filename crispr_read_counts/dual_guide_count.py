@@ -8,6 +8,12 @@ from .utils import (
   SAFE_SEQ_FORMAT,
   check_file_readable,
   check_file_writable)
+import csv
+
+csv.register_dialect('dg_library', delimiter='\t', quoting=csv.QUOTE_NONE)
+csv.register_dialect('dg_out_reads', delimiter='\t', quoting=csv.QUOTE_NONE)
+csv.register_dialect('dg_out_count', delimiter='\t', quoting=csv.QUOTE_NONE)
+csv.register_dialect('dg_out_stats', delimiter='\t', quoting=csv.QUOTE_NONE)
 
 DUAL_LIBRARY_EXPECTED_HEADER = ['sgrna_left_id', 'sgrna_left_seq', 'sgrna_right_id', 'sgrna_right_seq', 'unique_id', 'gene_pair_id', 'target_id']
 
@@ -67,10 +73,10 @@ def library_to_dicts(library: str):
   lookupGuidePair, lookupGuideLeft, lookupGuideRight, lookupGuideLeftRC, lookupGuideRightRC, lookupSafe, header_index = {}, {}, {}, {}, {}, {}, {}
 
   with open(library) as f:
-    header = f.readline()
-    fields = header.strip().split('\t')
+    reader = csv.reader(f, 'dg_library')
+    header = reader.__next__()
     # locate the columns in the guide library file
-    for index, col_name in enumerate(fields):
+    for index, col_name in enumerate(header):
       for expected_col_name in DUAL_LIBRARY_EXPECTED_HEADER:
         if expected_col_name == col_name.lower():
           header_index[expected_col_name] = index
@@ -80,10 +86,9 @@ def library_to_dicts(library: str):
       if expected_col_name not in header_index.keys():
         sys.exit(error_msg(f'Cound not find named column: {expected_col_name} in the input library file, please check file columns and try again.'))
 
-    for line in f:
-      eles = line.strip().split('\t')
-      sgSeqL = eles[header_index['sgrna_left_seq']]
-      sgSeqR = eles[header_index['sgrna_right_seq']]
+    for line_split in reader:
+      sgSeqL = line_split[header_index['sgrna_left_seq']]
+      sgSeqR = line_split[header_index['sgrna_right_seq']]
       sgSeqLrc = rev_compl(sgSeqL)
       sgSeqRrc = rev_compl(sgSeqR)
       lookupGuideLeft[sgSeqL] = 0
@@ -91,9 +96,9 @@ def library_to_dicts(library: str):
       lookupGuideLeftRC[sgSeqLrc] = 0
       lookupGuideRightRC[sgSeqRrc] = 0
       # store the safe sequences (guide id starts with F followed by a number)
-      if SAFE_SEQ_FORMAT.match(eles[header_index['sgrna_left_id']]):
+      if SAFE_SEQ_FORMAT.match(line_split[header_index['sgrna_left_id']]):
         lookupSafe[sgSeqL] = 0
-      if SAFE_SEQ_FORMAT.match(eles[header_index['sgrna_right_id']]):
+      if SAFE_SEQ_FORMAT.match(line_split[header_index['sgrna_right_id']]):
         lookupSafe[sgSeqR] = 0
       lookupGuidePair[sgSeqLrc + sgSeqR] = 0
 
@@ -108,7 +113,8 @@ def write_classified_reads_to_file_return_stats(
 
   read_id = None
   with open_plain_or_gzipped_file(
-    fastq1) as fq1, open_plain_or_gzipped_file(fastq2) as fq2, open(out_reads, 'w') as classified_reads:
+    fastq1) as fq1, open_plain_or_gzipped_file(fastq2) as fq2, open(out_reads, 'w', newline='') as classified_reads:
+    writer = csv.writer(classified_reads, 'dg_out_reads')
     for line_index, r1 in enumerate(fq1):
       r2 = fq2.readline()
       residue = (line_index + 1) % 4  # to figure which of the 4 line of a read recored this line is
@@ -134,29 +140,29 @@ def write_classified_reads_to_file_return_stats(
             n_safe_grna2 += 1
           else:
             n_safe_safe += 1
-          classified_reads.write('\t'.join(['FOUND', f'{label1}_{label2}', sample_name, read_id, r1, r2, f'{r2rc}{r1}']) + '\n')
+          writer.writerow(['FOUND', f'{label1}_{label2}', sample_name, read_id, r1, r2, f'{r2rc}{r1}'])
 
         # both guides found but they are incorrectly paired (most reads fall here)
         elif r2 in lookupGuideLeftRC and r1 in lookupGuideRight:
           n_incorrect_pair += 1
-          classified_reads.write('\t'.join(['MISS', 'gRNA1_gRNA2', sample_name, read_id, r1, r2, 'NA']) + '\n')
+          writer.writerow(['MISS', 'gRNA1_gRNA2', sample_name, read_id, r1, r2, 'NA'])
         # both guides found but they are incorrectly paired and have wrong orientation
         # few reads fall here
         elif r1 in lookupGuideLeft and r2 in lookupGuideRightRC:
           n_incorrect_pair += 1
-          classified_reads.write('\t'.join(['MISS', 'gRNA1_gRNA2', sample_name, read_id, r1, r2, 'NA']) + '\n')
+          writer.writerow(['MISS', 'gRNA1_gRNA2', sample_name, read_id, r1, r2, 'NA'])
         # only found the left guide (with either correct or wrong orientation)
         elif r2 in lookupGuideLeftRC or r1 in lookupGuideLeft:
           n_grna1 += 1
-          classified_reads.write('\t'.join(['MISS', 'gRNA1_nothing', sample_name, read_id, r1, r2, 'NA']) + '\n')
+          writer.writerow(['MISS', 'gRNA1_nothing', sample_name, read_id, r1, r2, 'NA'])
         # only found the right guide (with either correct or wrong orientation)
         elif r1 in lookupGuideRight or r2 in lookupGuideRightRC:
           n_grna2 += 1
-          classified_reads.write('\t'.join(['MISS', 'nothing_gRNA2', sample_name, read_id, r1, r2, 'NA']) + '\n')
+          writer.writerow(['MISS', 'nothing_gRNA2', sample_name, read_id, r1, r2, 'NA'])
         # didn't match any guides
         else:
           n_miss_miss += 1
-          classified_reads.write('\t'.join(['MISS', 'nothing_nothing', sample_name, read_id, r1, r2, 'NA']) + '\n')
+          writer.writerow(['MISS', 'nothing_nothing', sample_name, read_id, r1, r2, 'NA'])
 
   if (line_index + 1) % 4 != 0:
     print(warning_msg('Number of lines in provided FastQ files is not multiple times of 4, truncated file?'), flush=True)
@@ -168,9 +174,10 @@ def write_classified_reads_to_file_return_stats(
 
 def write_guides_return_stats(library: str, out_counts: str, lookupGuidePair, header_index):
   zero_guides, less_30_guides = 0, 0
-  with open(library, 'r') as lib, open(out_counts, 'w') as out_ct:
+  with open(library, 'r') as lib, open(out_counts, 'w', newline='') as out_ct:
     next(lib)
-    out_ct.write('\t'.join(['unique_id', 'target_id', 'gene_pair_id', 'sample_name']) + '\n')
+    writer = csv.writer(out_ct, 'dg_out_count')
+    writer.writerow(['unique_id', 'target_id', 'gene_pair_id', 'sample_name'])
     for line_index, line in enumerate(lib):
       ele = line.strip().split('\t')
       sgSeqL = ele[header_index['sgrna_left_seq']]
@@ -180,7 +187,7 @@ def write_guides_return_stats(library: str, out_counts: str, lookupGuidePair, he
       target_pair_id = ele[header_index['target_id']]
       sgSeqLrc = rev_compl(sgSeqL)
       counts = lookupGuidePair[sgSeqLrc + sgSeqR]
-      out_ct.write('\t'.join([unique_pair_id, target_pair_id, gene_pair_id, str(counts)]) + '\n')
+      writer.writerow([unique_pair_id, target_pair_id, gene_pair_id, str(counts)])
       if counts == 0:
         zero_guides += 1
       if counts < 30:
@@ -193,6 +200,7 @@ def write_guides_return_stats(library: str, out_counts: str, lookupGuidePair, he
 
 def write_stats(out_stats: str, col_names: List[str], values: List[str]):
 
-  with open(out_stats, 'w') as stats_out:
-    stats_out.write('\t'.join(col_names) + '\n')
-    stats_out.write('\t'.join(values) + '\n')
+  with open(out_stats, 'w', newline='') as stats_out:
+    writer = csv.writer(stats_out, 'dg_out_stats')
+    writer.writerow(col_names)
+    writer.writerow(values)
