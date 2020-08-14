@@ -10,11 +10,6 @@ from .utils import (
   check_file_writable)
 import pysam
 import json
-import csv
-
-csv.register_dialect('sg_library', delimiter=',', quoting=csv.QUOTE_NONE)
-csv.register_dialect('sg_plasmid_count', delimiter='\t', quoting=csv.QUOTE_NONE)
-csv.register_dialect('sg_out_count', delimiter='\t', quoting=csv.QUOTE_NONE)
 
 
 def count_single(args: Dict[str, Any]):
@@ -125,9 +120,8 @@ class SingleGuideReadCounts():
   def write_output(self, out_stats: str):
     zero_count_guides, low_count_guides = 0, 0
     with open(self.out_count, 'w', newline='') as f:
-      writer = csv.writer(f, 'sg_out_count')
       if self.plas_name:
-        writer.writerow(['sgRNA', 'gene', f'{self.sample_name}.sample', self.plas_name])
+        f.write('\t'.join(['sgRNA', 'gene', f'{self.sample_name}.sample', self.plas_name]) + '\n')
         for sgrna_seq in sorted(self.lib.keys()):
           for sgrna_id in self.lib[sgrna_seq]:
             count = self.sample_count.get(sgrna_id, 0)
@@ -136,9 +130,9 @@ class SingleGuideReadCounts():
             if count < self.LOW_COUNT_GUIDES_THRESHOLD:
               low_count_guides += 1
             plasmid_count = self.plasmid.get(sgrna_id, 0)
-            writer.writerow([sgrna_id, self.targeted_genes[sgrna_id], str(count), str(plasmid_count)])
+            f.write('\t'.join([sgrna_id, self.targeted_genes[sgrna_id], str(count), str(plasmid_count)]) + '\n')
       else:
-        writer.writerow(['sgRNA', 'gene', f'{self.sample_name}.sample'])
+        f.write('\t'.join(['sgRNA', 'gene', f'{self.sample_name}.sample']) + '\n')
         for sgrna_seq in sorted(self.lib.keys()):
           for sgrna_id in self.lib[sgrna_seq]:
             count = self.sample_count.get(sgrna_id, 0)
@@ -146,7 +140,7 @@ class SingleGuideReadCounts():
               zero_count_guides += 1
             if count < self.LOW_COUNT_GUIDES_THRESHOLD:
               low_count_guides += 1
-            writer.writerow([sgrna_id, self.targeted_genes[sgrna_id], str(count)])
+            f.write('\t'.join([sgrna_id, self.targeted_genes[sgrna_id], str(count)]) + '\n')
 
     if out_stats:
       self.stats['zero_count_guides'] = zero_count_guides
@@ -167,8 +161,8 @@ class SingleGuideReadCounts():
     targeted_genes = {}
 
     with open(lib_file, 'r') as f:
-      reader = csv.reader(f, 'sg_library')
-      for line_number, line_split in enumerate(reader, 1):
+      for line_number, line in enumerate(f, 1):
+        line_split = line.strip().split(',')
         if len(line_split) < 3:
           sys.exit(error_msg(f'Guide RNA library file line: {line_number} does not have 3 columns, or the file uses expected delimiter.'))
         sgrna_id, gene_name, lib_seq = line_split[0], line_split[1], line_split[2]
@@ -189,12 +183,12 @@ class SingleGuideReadCounts():
     plasmid = {}
     plasmid_name = None
     with open(plasmid_file, 'r') as f:
-      reader = csv.reader(f, 'sg_plasmid_count')
-      for line_number, line_split in enumerate(reader, 1):
+      for line_number, line in enumerate(f, 1):
+        line_split = line.strip().split('\t')
         if len(line_split) < 3:
           sys.exit(error_msg(f'Plasmid count file line: {line_number} does not have 3 columns, or the file uses expected delimiter.'))
         if line_number == 1:
-          if PLASMID_COUNT_HEADER.match('\t'.join(line_split)):
+          if PLASMID_COUNT_HEADER.match(line):
             plasmid_name = line_split[2]
           else:
             sys.exit(error_msg(f'Plasmid count file does not have expected header.'))

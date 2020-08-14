@@ -1,24 +1,20 @@
 import sys
 from .utils import error_msg, open_plain_or_gzipped_file, PLASMID_COUNT_HEADER
 from typing import TextIO
-import csv
-
-csv.register_dialect('sg_out_count', delimiter='\t', quoting=csv.QUOTE_NONE)
 
 
 def merge_single(args):
   has_plasmid = args['plasmid']
   samp_name, plas_name, sample_rc, plasmid_rc, genes = get_sample_read_counts(args['input'], has_plasmid)
   with open(args['output'], 'w', newline='') as out:
-    writer = csv.writer(out, 'sg_out_count')
     if has_plasmid:
-      writer.writerow(['sgRNA', 'gene', samp_name, plas_name])
+      out.write('\t'.join(['sgRNA', 'gene', samp_name, plas_name]) + '\n')
       for id in sample_rc.keys():
-        writer.writerow([id, genes[id], str(sample_rc[id]), str(plasmid_rc[id])])
+        out.write('\t'.join([id, genes[id], str(sample_rc[id]), str(plasmid_rc[id])]) + '\n')
     else:
-      writer.writerow(['sgRNA', 'gene', samp_name])
+      out.write('\t'.join(['sgRNA', 'gene', samp_name]) + '\n')
       for id in sample_rc.keys():
-        writer.writerow([id, genes[id], str(sample_rc[id])])
+        out.write('\t'.join([id, genes[id], str(sample_rc[id])]) + '\n')
   print('Done.')
 
 
@@ -30,9 +26,9 @@ def get_sample_read_counts(in_files_string: str, has_plasmid: bool):
   for a_file in files:
     print(f'reading from {a_file}...')
     with open_plain_or_gzipped_file(a_file) as in_f:
-      reader = csv.reader(in_f, 'sg_out_count')
-      header_split = reader.__next__()
-      if PLASMID_COUNT_HEADER.match('\t'.join(header_split)):
+      header = in_f.readline().strip()
+      header_split = header.split('\t')
+      if PLASMID_COUNT_HEADER.match(header):
         sample_name = header_split[2]
         if has_plasmid:
           if len(header_split) < 4:
@@ -45,9 +41,10 @@ def get_sample_read_counts(in_files_string: str, has_plasmid: bool):
       else:
         sys.exit(error_msg(f'Unexpected header in input file: {a_file}'))
 
-      def get_counts_results(reader: csv.reader, with_or_without_plasmid_counts: bool):
+      def get_counts_results(in_f: TextIO, with_or_without_plasmid_counts: bool):
         if with_or_without_plasmid_counts:
-          for line_split in reader:
+          for line in in_f:
+            line_split = line.strip().split('\t')
             id = line_split[0]
             sample_count = sample.get(id, 0) + int(line_split[2])
             sample[id] = sample_count
@@ -58,12 +55,13 @@ def get_sample_read_counts(in_files_string: str, has_plasmid: bool):
             else:
               plasmid[id] = count
         else:
-          for line_split in reader:
+          for line in in_f:
+            line_split = line.strip().split('\t')
             id = line_split[0]
             sample_count = sample.get(id, 0) + int(line_split[2])
             sample[id] = sample_count
             targeted_genes[id] = line_split[1]
 
-      get_counts_results(reader, has_plasmid)
+      get_counts_results(in_f, has_plasmid)
 
   return sample_name, plasmid_name, sample, plasmid, targeted_genes
