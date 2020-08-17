@@ -1,0 +1,1 @@
+{"total_reads": 100, "vendor_failed_reads": 0, "mapped_to_guide_reads": 32, "zero_count_guides": 13, "low_count_guides": 13}
