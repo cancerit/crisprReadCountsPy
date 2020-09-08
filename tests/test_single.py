@@ -16,7 +16,8 @@ TEST_INPUTS = {'library': os.path.join(test_single_data_dir, 'Human_v1_CRISPR_li
   'plasmid': os.path.join(test_single_data_dir, 'Human_v1_CRISPR_library.test.plasmid_counts.csv'),
   'ref': os.path.join(test_single_data_dir, 'genome.empty.fa'),
   'trim': 0,
-  'reverse_complement': False}
+  'reverse_complement': False,
+  'lib_delimiter': ','}
 
 
 @pytest.mark.parametrize('args', [
@@ -54,6 +55,9 @@ def test_check_input_files(args: List):
 @pytest.mark.parametrize('args, expected_output', [
   ({**TEST_INPUTS, 'plasmid': None},
   {'output': os.path.join(test_single_data_dir, 'test.crispr.count.no_plasmid.txt')}),
+  ({**TEST_INPUTS, 'plasmid': None,
+   'library': os.path.join(test_single_data_dir, 'Human_v1_CRISPR_library.test.lib.tsv'), 'lib_delimiter': '\t'},
+  {'output': os.path.join(test_single_data_dir, 'test.crispr.count.no_plasmid.txt')}),
   ({**TEST_INPUTS},
   {'output': os.path.join(test_single_data_dir, 'test.crispr.count.with_plasmid.txt'),
    'stats': os.path.join(test_single_data_dir, 'test.crispr.count.with_plasmid.stats.txt')}),
@@ -64,6 +68,10 @@ def test_check_input_files(args: List):
   {'output': os.path.join(test_single_data_dir, 'test.crispr.count.with_plasmid.reverse_comp.txt'),
    'stats': os.path.join(test_single_data_dir, 'test.crispr.count.with_plasmid.reverse_comp.stats.txt')}),
   ({**TEST_INPUTS, 'reverse_complement': True, 'trim': 2},
+  {'output': os.path.join(test_single_data_dir, 'test.crispr.count.with_plasmid.reverse_comp.trim2.txt'),
+   'stats': os.path.join(test_single_data_dir, 'test.crispr.count.with_plasmid.reverse_comp.trim2.stats.txt')}),
+  ({**TEST_INPUTS, 'reverse_complement': True, 'trim': 2,
+    'library': os.path.join(test_single_data_dir, 'Human_v1_CRISPR_library.test.lib.tsv'), 'lib_delimiter': '\t'},
   {'output': os.path.join(test_single_data_dir, 'test.crispr.count.with_plasmid.reverse_comp.trim2.txt'),
    'stats': os.path.join(test_single_data_dir, 'test.crispr.count.with_plasmid.reverse_comp.trim2.stats.txt')})
 ])
