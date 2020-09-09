@@ -9,7 +9,7 @@ import filecmp
 test_data_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
 test_single_data_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'test-single')
 
-TEST_INPUTS = {'library': os.path.join(test_single_data_dir, 'Human_v1_CRISPR_library.test.lib.csv'),
+TEST_INPUTS = {'library': os.path.join(test_single_data_dir, 'Human_v1_CRISPR_library.test.lib.tsv'),
   'input': os.path.join(test_single_data_dir, 'test.crispr.cram'),
   'output': 'output.txt',
   'stats': 'stats.txt',
@@ -17,7 +17,7 @@ TEST_INPUTS = {'library': os.path.join(test_single_data_dir, 'Human_v1_CRISPR_li
   'ref': os.path.join(test_single_data_dir, 'genome.empty.fa'),
   'trim': 0,
   'reverse_complement': False,
-  'lib_delimiter': ','}
+  'lib_delimiter': '\t'}
 
 
 @pytest.mark.parametrize('args', [
@@ -56,7 +56,7 @@ def test_check_input_files(args: List):
   ({**TEST_INPUTS, 'plasmid': None},
   {'output': os.path.join(test_single_data_dir, 'test.crispr.count.no_plasmid.txt')}),
   ({**TEST_INPUTS, 'plasmid': None,
-   'library': os.path.join(test_single_data_dir, 'Human_v1_CRISPR_library.test.lib.tsv'), 'lib_delimiter': '\t'},
+   'library': os.path.join(test_single_data_dir, 'Human_v1_CRISPR_library.test.lib.csv'), 'lib_delimiter': ','},
   {'output': os.path.join(test_single_data_dir, 'test.crispr.count.no_plasmid.txt')}),
   ({**TEST_INPUTS},
   {'output': os.path.join(test_single_data_dir, 'test.crispr.count.with_plasmid.txt'),
@@ -71,7 +71,7 @@ def test_check_input_files(args: List):
   {'output': os.path.join(test_single_data_dir, 'test.crispr.count.with_plasmid.reverse_comp.trim2.txt'),
    'stats': os.path.join(test_single_data_dir, 'test.crispr.count.with_plasmid.reverse_comp.trim2.stats.txt')}),
   ({**TEST_INPUTS, 'reverse_complement': True, 'trim': 2,
-    'library': os.path.join(test_single_data_dir, 'Human_v1_CRISPR_library.test.lib.tsv'), 'lib_delimiter': '\t'},
+    'library': os.path.join(test_single_data_dir, 'Human_v1_CRISPR_library.test.lib.csv'), 'lib_delimiter': ','},
   {'output': os.path.join(test_single_data_dir, 'test.crispr.count.with_plasmid.reverse_comp.trim2.txt'),
    'stats': os.path.join(test_single_data_dir, 'test.crispr.count.with_plasmid.reverse_comp.trim2.stats.txt')})
 ])
