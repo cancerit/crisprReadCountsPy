@@ -15,7 +15,10 @@ import json
 def count_single(args: Dict[str, Any]):
   # validate inputs before doing anything
   check_input_files(args)
-  count_instance = SingleGuideReadCounts(args['library'], args['input'], args['output'], args['ref'])
+  # delimiter length should be 1, or should it?
+  if len(args['lib_delimiter']) != 1:
+    sys.exit(error_msg('Supplied delimiter length must be 1.'))
+  count_instance = SingleGuideReadCounts(args['library'], args['lib_delimiter'], args['input'], args['output'], args['ref'])
   count_instance.count(args['trim'], args['plasmid'], args['reverse_complement'], args['stats'])
 
 
@@ -41,8 +44,8 @@ class SingleGuideReadCounts():
 
   LOW_COUNT_GUIDES_THRESHOLD = 15
 
-  def __init__(self, library, in_file, out_count, ref):
-    self.lib, self.targeted_genes = self.get_single_guide_library(library)
+  def __init__(self, library, lib_delimiter, in_file, out_count, ref):
+    self.lib, self.targeted_genes = self.get_single_guide_library(library, lib_delimiter)
     self.in_file = in_file
     self.out_count = out_count
     self.ref = ref  # ref must be an existing file if input is a CRAM
@@ -156,13 +159,13 @@ class SingleGuideReadCounts():
     self.write_output(out_stats)
 
   @staticmethod
-  def get_single_guide_library(lib_file: str):
+  def get_single_guide_library(lib_file: str, delimiter: str):
     lib = {}
     targeted_genes = {}
 
     with open(lib_file, 'r') as f:
       for line_number, line in enumerate(f, 1):
-        line_split = line.strip().split(',')
+        line_split = line.strip().split(delimiter)
         if len(line_split) < 3:
           sys.exit(error_msg(f'Guide RNA library file line: {line_number} does not have 3 columns, or the file uses expected delimiter.'))
         sgrna_id, gene_name, lib_seq = line_split[0], line_split[1], line_split[2]
