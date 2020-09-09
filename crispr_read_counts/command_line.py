@@ -52,7 +52,8 @@ def cli():
 @click.option(
   '--lib-delimiter', '-d',
   metavar='CHAR',
-  help='Delimiter of the guide library file. Default: tab.',
+  help='Delimiter of the guide library file. On Unix with bash, use \'$\' in front of your delimiter '
+       'if it starts with a backslash. e.g.: --delimiter $\'\\t\'. Default: tab.',
   default='\t')
 def count_single(**kwargs):
   from .single_guide_count import count_single
