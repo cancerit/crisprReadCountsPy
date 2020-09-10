@@ -6,7 +6,7 @@ Gets CRISPR read counts from cram files and merges readcounts from multiple read
 |---|---|
 |  [![Build Status](https://travis-ci.org/cancerit/crisprReadCountsPy.svg?branch=master)](https://travis-ci.org/cancerit/crisprReadCountsPy) | [![Build Status](https://travis-ci.org/cancerit/crisprReadCountsPy.svg?branch=develop)](https://travis-ci.org/cancerit/crisprReadCountsPy) |
 
-[![Docker Repository on Quay](https://quay.io/repository/wtsicgp/crisprreadcounts_py/status "Docker Repository on Quay")](https://quay.io/repository/wtsicgp/crisprreadcounts_py)
+[![Docker Repository on Quay](https://quay.io/repository/wtsicgp/crisprreadcountspy/status "Docker Repository on Quay")](https://quay.io/repository/wtsicgp/crisprreadcountspy)
 
 ## Usage
 
