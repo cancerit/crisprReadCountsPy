@@ -1,0 +1,2 @@
+sample	total_reads	miss	mismatch	gRNA1_hits	gRNA2_hits	safe_safe	gRNA1_safe	safe_gRNA2	gRNA1_gRNA2	total_guides	zero_guides	less_30_guides
+test_sample	2000	795	3	156	46	0	281	249	470	10	1	4
