@@ -1,5 +1,9 @@
 # Changes
 
+## 2.0.1
+
+* Used the Quay.io repo for original Perl code for this code base 
+
 ## 2.0.0
 
 * migrated Perl code of crisprReadCounts to Python3
