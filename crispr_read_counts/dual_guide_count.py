@@ -48,19 +48,11 @@ def count_dual(args):
 
 
 def validate_inputs(args):
-  if not check_file_readable(args['library']):
-    sys.exit(error_msg('Provided library file does not exist or have no permission to read: %s' % {args['library']}))
-  if not check_file_readable(args['fastq1']):
-    sys.exit(error_msg('Provided FastQ file does not exist or have no permission to read: %s' % args['fastq1']))
-  if not check_file_readable(args['fastq2']):
-    sys.exit(error_msg('Provided FastQ file does not exist or have no permission to read: %s' % args['fastq2']))
+  for file_type, file_path in zip(['library', 'FastQ', 'FastQ'], [args['library'], args['fastq1'], args['fastq2']]):
+    check_file_readable(file_path, f'Provided {file_type} file does not exist or have no permission to read: {file_path}')
 
-  if not check_file_writable(args['reads']):
-    sys.exit(error_msg('Cannot write to provided output classified reads file: {}' % args['reads']))
-  if not check_file_writable(args['counts']):
-    sys.exit(error_msg('Cannot write to provided output counts file: {}' % args['counts']))
-  if not check_file_writable(args['stats']):
-    sys.exit(error_msg('Cannot write to provided output stats file: {}' % args['stats']))
+  for file_type, file_path in zip(['classified reads', 'counts', 'stats'], [args['reads'], args['counts'], args['stats']]):
+    check_file_writable(file_path, f'Cannot write to provided output {file_type} file: {file_path}.')
 
 
 def library_to_dicts(library: str):
