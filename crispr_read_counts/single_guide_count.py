@@ -14,7 +14,7 @@ import json
 
 def count_single(args: Dict[str, Any]):
   # validate inputs before doing anything
-  check_input_files(args)
+  check_files(args)
   # delimiter length should be 1, or should it?
   if len(args['lib_delimiter']) != 1:
     sys.exit(error_msg('Supplied delimiter length must be 1.'))
@@ -22,7 +22,7 @@ def count_single(args: Dict[str, Any]):
   count_instance.count(args['trim'], args['plasmid'], args['reverse_complement'], args['stats'])
 
 
-def check_input_files(args: Dict[str, Any]):
+def check_files(args: Dict[str, Any]):
   for file_type, file_path in zip(['library', 'input'], [args['library'], args['input']]):
     check_file_readable(file_path, f'Provided {file_type} file does not exist or have no permission to read: {file_path}')
   if args['ref']:
@@ -34,7 +34,7 @@ def check_input_files(args: Dict[str, Any]):
     check_file_writable(args['stats'], 'Cannot write to provided output stats file: %s' % args['stats'])
 
 
-class SingleGuideReadCounts():
+class SingleGuideReadCounts:
   '''
   The class is just to reduce parameters passing around functions.
   '''
