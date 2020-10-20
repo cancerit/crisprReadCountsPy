@@ -106,10 +106,12 @@ def count_dual(**kwargs):
   '--input', '-i',
   metavar='FILE',
   # NOTE: not the native way to handle list of input. It's to repect the existing Perl version interface.
+  required=True,
   help='Comma separated list of input files.')
 @click.option(
   '--output', '-o',
   metavar='FILE',
+  required=True,
   help='Output file.')
 @click.option(
   '--plasmid', '-p',
@@ -117,6 +119,10 @@ def count_dual(**kwargs):
   default=False,
   is_flag=True,
   help='Has plasmid counts.')
+@click.option(
+  '--stats', '-s',
+  metavar='FILE',
+  help='Output file path of QC stats in JSON format.')
 def merge_single(**kwargs):
   from .single_guide_merge import merge_single
   merge_single(kwargs)

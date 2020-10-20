@@ -58,7 +58,6 @@ def check_file_readable(fn, msg_if_fail=None):
       sys.exit()
 
 
-
 def check_file_writable(fn, msg_if_fail=None):
   result = True
   if os.path.exists(fn):

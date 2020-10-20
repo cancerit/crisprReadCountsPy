@@ -1,6 +1,6 @@
 import pytest
-from typing import List
-from crispr_read_counts.single_guide_count import check_input_files, count_single
+from typing import List, Dict
+from crispr_read_counts.single_guide_count import check_files, count_single
 from crispr_read_counts.single_guide_merge import merge_single
 import os
 import tempfile
@@ -21,7 +21,6 @@ TEST_INPUTS = {'library': os.path.join(test_single_data_dir, 'Human_v1_CRISPR_li
 
 
 @pytest.mark.parametrize('args', [
-  ({'library': os.path.join(test_data_dir, 'non_existing_file')}),
   ({'library': os.path.join(test_single_data_dir, 'Human_v1_CRISPR_library.test.lib.csv'),
     'input': os.path.join(test_single_data_dir, 'non_existing_file')}),
   ({'library': os.path.join(test_single_data_dir, 'Human_v1_CRISPR_library.test.lib.csv'),
@@ -46,9 +45,9 @@ TEST_INPUTS = {'library': os.path.join(test_single_data_dir, 'Human_v1_CRISPR_li
     'plasmid': os.path.join(test_single_data_dir, 'Human_v1_CRISPR_library.test.plasmid_counts.csv'),
     'ref': os.path.join(test_data_dir, 'non_existing_file')})
 ])
-def test_check_input_files(args: List):
+def test_check_files(args: List):
   with pytest.raises(SystemExit) as pytest_e:
-    check_input_files(args)
+    check_files(args)
   assert pytest_e.type == SystemExit
 
 
@@ -87,14 +86,19 @@ def test_single_count(args, expected_output):
 
 @pytest.mark.parametrize('args, compare_to', [
   ({'input': '{0},{0}'.format(os.path.join(test_single_data_dir, 'test.crispr.count.with_plasmid.txt')),
-    'plasmid': True},
-  os.path.join(test_single_data_dir, 'test.crispr.count.with_plasmid.merge_doubled.txt')),
+    'plasmid': True, 'stats': None},
+  {'merged_count': os.path.join(test_single_data_dir, 'test.crispr.count.with_plasmid.merge_doubled.txt')}),
   ({'input': '{0},{0}'.format(os.path.join(test_single_data_dir, 'test.crispr.count.no_plasmid.txt')),
-    'plasmid': False},
-  os.path.join(test_single_data_dir, 'test.crispr.count.no_plasmid.merge_doubled.txt'))
+    'plasmid': False, 'stats': 'stats.txt'},
+  {'merged_count': os.path.join(test_single_data_dir, 'test.crispr.count.no_plasmid.merge_doubled.txt'),
+  'stats': os.path.join(test_single_data_dir, 'test.crispr.count.with_plasmid.merge_doubled.stats.txt')})
 ])
-def test_merge_single(args, compare_to):
+def test_merge_single(args: Dict[str, str], compare_to: Dict[str, str]):
   with tempfile.TemporaryDirectory() as tmpd:
     args['output'] = os.path.join(tmpd, 'merge_output.txt')
+    if args['stats']:
+      args['stats'] = os.path.join(tmpd, 'stats.txt')
     merge_single(args)
-    assert filecmp.cmp(args['output'], compare_to)
+    assert filecmp.cmp(args['output'], compare_to['merged_count'])
+    if args['stats']:
+      assert filecmp.cmp(args['stats'], compare_to['stats'])
