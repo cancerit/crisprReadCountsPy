@@ -31,7 +31,7 @@ def count_dual(args):
       lookupGuidePair, lookupGuideLeft, lookupGuideRight, lookupGuideLeftRC, lookupGuideRightRC, lookupSafe)
 
   total_guides, zero_guides, less_30_guides = write_guides_return_stats(
-    args['library'], args['counts'], lookupGuidePair, header_index)
+    args['library'], args['counts'], args['sample'], lookupGuidePair, header_index)
 
   write_stats(
     args['stats'],
@@ -158,11 +158,11 @@ def write_classified_reads_to_file_return_stats(
   return n_safe_safe, n_grna1_safe, n_safe_grna2, n_grna1_grna2, n_grna1, n_grna2, n_incorrect_pair, n_miss_miss, read_counts
 
 
-def write_guides_return_stats(library: str, out_counts: str, lookupGuidePair, header_index):
+def write_guides_return_stats(library: str, out_counts: str, sample_name: str, lookupGuidePair, header_index):
   zero_guides, less_30_guides = 0, 0
   with open(library, 'r') as lib, open(out_counts, 'w') as out_ct:
     next(lib)
-    out_ct.write('\t'.join(['unique_id', 'target_id', 'gene_pair_id', 'sample_name']) + '\n')
+    out_ct.write('\t'.join(['unique_id', 'target_id', 'gene_pair_id', sample_name]) + '\n')
     for line_count, line in enumerate(lib, 1):
       ele = line.strip().split('\t')
       sgSeqL = ele[header_index['sgrna_left_seq']]
