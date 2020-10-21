@@ -45,11 +45,7 @@ def open_plain_or_gzipped_file(file: str):
 
 
 def check_file_readable(fn, msg_if_fail=None):
-  result = True
-  if os.path.isfile(fn):
-    result = os.access(fn, os.R_OK)
-  else:
-    result = False
+  result = os.path.isfile(fn) and os.access(fn, os.R_OK)
 
   if not result:
     if msg_if_fail:
