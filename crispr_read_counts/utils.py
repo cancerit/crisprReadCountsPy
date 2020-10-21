@@ -45,7 +45,7 @@ def open_plain_or_gzipped_file(file: str):
 
 
 def check_file_readable(fn, msg_if_fail=None):
-  result = os.path.isfile(fn) and os.access(fn, os.R_OK)
+  result: bool = os.path.isfile(fn) and os.access(fn, os.R_OK)
 
   if not result:
     if msg_if_fail:
@@ -55,20 +55,10 @@ def check_file_readable(fn, msg_if_fail=None):
 
 
 def check_file_writable(fn, msg_if_fail=None):
-  result = True
-  if os.path.exists(fn):
-    # path exists
-    if os.path.isfile(fn):  # is it a file or a dir?
-      # also works when file is a link and the target is writable
-      result = os.access(fn, os.W_OK)
-    else:
-      result = False  # path is a dir, so cannot write as a file
-  else:  # target does not exist, check perms on parent dir
-    pdir = os.path.dirname(fn)
-    if not pdir:
-      pdir = '.'
-    # target is creatable if parent dir is writable
-    result = os.access(pdir, os.W_OK)
+  result: bool = (
+    (os.path.isfile(fn) and os.access(fn, os.W_OK)) if os.path.exists(fn) else
+    os.access(os.path.dirname(fn) or '.', os.W_OK)
+  )
 
   if not result:
     if msg_if_fail:
