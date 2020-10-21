@@ -23,7 +23,8 @@ def count_single(args: Dict[str, Any]):
 
 
 def check_files(args: Dict[str, Any]):
-  for file_type, file_path in zip(['library', 'input'], [args['library'], args['input']]):
+  for file_type in ['library', 'input']:
+    file_path = args[file_type]
     check_file_readable(file_path, f'Provided {file_type} file does not exist or have no permission to read: {file_path}')
   if args['ref']:
     check_file_readable(args['ref'], 'Provided reference file does not exist or have no permission to read: %s' % args['ref'])
