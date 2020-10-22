@@ -1,4 +1,3 @@
-
 import sys
 from typing import List
 from .utils import (
@@ -73,10 +72,15 @@ def library_to_dicts(library: str):
       if expected_col_name not in header_index.keys():
         sys.exit(error_msg(f'Cound not find named column: {expected_col_name} in the input library file, please check file columns and try again.'))
 
+    header_index_left_seq = header_index['sgrna_left_seq']
+    header_index_right_seq = header_index['sgrna_right_seq']
+    header_index_left_id = header_index['sgrna_left_id']
+    header_index_right_id = header_index['sgrna_right_id']
+
     for line in f:
       line_split = line.strip().split('\t')
-      sgSeqL = line_split[header_index['sgrna_left_seq']]
-      sgSeqR = line_split[header_index['sgrna_right_seq']]
+      sgSeqL = line_split[header_index_left_seq]
+      sgSeqR = line_split[header_index_right_seq]
       sgSeqLrc = rev_compl(sgSeqL)
       sgSeqRrc = rev_compl(sgSeqR)
       lookupGuideLeft.add(sgSeqL)
@@ -84,9 +88,9 @@ def library_to_dicts(library: str):
       lookupGuideLeftRC.add(sgSeqLrc)
       lookupGuideRightRC.add(sgSeqRrc)
       # store the safe sequences (guide id starts with F followed by a number)
-      if SAFE_SEQ_FORMAT.match(line_split[header_index['sgrna_left_id']]):
+      if SAFE_SEQ_FORMAT.match(line_split[header_index_left_id]):
         lookupSafe.add(sgSeqL)
-      if SAFE_SEQ_FORMAT.match(line_split[header_index['sgrna_right_id']]):
+      if SAFE_SEQ_FORMAT.match(line_split[header_index_right_id]):
         lookupSafe.add(sgSeqR)
       lookupGuidePair[sgSeqLrc + sgSeqR] = 0
 
@@ -117,13 +121,15 @@ def write_classified_reads_to_file_return_stats(
           lookupGuidePair[pair_guide] += 1
           r2rc = rev_compl(r2)
           label1 = 'safe' if r2rc in lookupSafe else 'gRNA1'
+          label1_safe: bool = label1 == 'safe'
           label2 = 'safe' if r1 in lookupSafe else 'gRNA2'
+          label2_safe: bool = label2 == 'safe'
           # count number of occurrances
-          if label1 == 'gRNA1' and label2 == 'gRNA2':
+          if not label1_safe and not label2_safe:
             n_grna1_grna2 += 1
-          elif label1 == 'gRNA1' and label2 == 'safe':
+          elif not label1_safe and label2_safe:
             n_grna1_safe += 1
-          elif label1 == 'safe' and label2 == 'gRNA2':
+          elif label1_safe and not label2_safe:
             n_safe_grna2 += 1
           else:
             n_safe_safe += 1
