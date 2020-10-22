@@ -57,7 +57,8 @@ def validate_inputs(args):
 
 def library_to_dicts(library: str):
 
-  lookupGuidePair, lookupGuideLeft, lookupGuideRight, lookupGuideLeftRC, lookupGuideRightRC, lookupSafe, header_index = {}, {}, {}, {}, {}, {}, {}
+  lookupGuidePair, header_index = {}, {}
+  lookupGuideLeft, lookupGuideRight, lookupGuideLeftRC, lookupGuideRightRC, lookupSafe = set(), set(), set(), set(), set()
 
   with open(library) as f:
     header = f.readline().strip().split('\t')
@@ -78,15 +79,15 @@ def library_to_dicts(library: str):
       sgSeqR = line_split[header_index['sgrna_right_seq']]
       sgSeqLrc = rev_compl(sgSeqL)
       sgSeqRrc = rev_compl(sgSeqR)
-      lookupGuideLeft[sgSeqL] = 0
-      lookupGuideRight[sgSeqR] = 0
-      lookupGuideLeftRC[sgSeqLrc] = 0
-      lookupGuideRightRC[sgSeqRrc] = 0
+      lookupGuideLeft.add(sgSeqL)
+      lookupGuideRight.add(sgSeqR)
+      lookupGuideLeftRC.add(sgSeqLrc)
+      lookupGuideRightRC.add(sgSeqRrc)
       # store the safe sequences (guide id starts with F followed by a number)
       if SAFE_SEQ_FORMAT.match(line_split[header_index['sgrna_left_id']]):
-        lookupSafe[sgSeqL] = 0
+        lookupSafe.add(sgSeqL)
       if SAFE_SEQ_FORMAT.match(line_split[header_index['sgrna_right_id']]):
-        lookupSafe[sgSeqR] = 0
+        lookupSafe.add(sgSeqR)
       lookupGuidePair[sgSeqLrc + sgSeqR] = 0
 
   return lookupGuidePair, lookupGuideLeft, lookupGuideRight, lookupGuideLeftRC, lookupGuideRightRC, lookupSafe, header_index
