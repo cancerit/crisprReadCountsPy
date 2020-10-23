@@ -1,6 +1,6 @@
 # Changes
 
-## next
+## 2.1.0
 
 * added an option to output some stats to a JSON file when merging single guided CRISPR read counts (read counts output of `crisprReadCounts count-single`).
 
