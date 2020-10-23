@@ -14,7 +14,7 @@ import json
 
 def count_single(args: Dict[str, Any]):
   # validate inputs before doing anything
-  check_input_files(args)
+  check_files(args)
   # delimiter length should be 1, or should it?
   if len(args['lib_delimiter']) != 1:
     sys.exit(error_msg('Supplied delimiter length must be 1.'))
@@ -22,22 +22,20 @@ def count_single(args: Dict[str, Any]):
   count_instance.count(args['trim'], args['plasmid'], args['reverse_complement'], args['stats'])
 
 
-def check_input_files(args: Dict[str, Any]):
-  if not check_file_readable(args['library']):
-    sys.exit(error_msg('Provided library file does not exist or have no permission to read: %s' % {args['library']}))
-  if not check_file_readable(args['input']):
-    sys.exit(error_msg('Provided input file does not exist or have no permission to read: %s' % args['input']))
-  if args['ref'] and not check_file_readable(args['ref']):
-    sys.exit(error_msg('Provided reference file does not exist or have no permission to read: %s' % args['ref']))
-  if args['plasmid'] and not check_file_readable(args['plasmid']):
-    sys.exit(error_msg('Provided plasmid count file does not exist or have no permission to read: %s' % args['plasmid']))
-  if not check_file_writable(args['output']):
-    sys.exit(error_msg('Cannot write to provided output count file: %s' % args['output']))
-  if args['stats'] and not check_file_writable(args['stats']):
-    sys.exit(error_msg('Cannot write to provided output stats file: %s' % args['stats']))
+def check_files(args: Dict[str, Any]):
+  for file_type in ['library', 'input']:
+    file_path = args[file_type]
+    check_file_readable(file_path, f'Provided {file_type} file does not exist or have no permission to read: {file_path}')
+  if args['ref']:
+    check_file_readable(args['ref'], 'Provided reference file does not exist or have no permission to read: %s' % args['ref'])
+  if args['plasmid']:
+    check_file_readable(args['plasmid'], 'Provided plasmid count file does not exist or have no permission to read: %s' % args['plasmid'])
+  check_file_writable(args['output'], 'Cannot write to provided output count file: %s' % args['output'])
+  if args['stats']:
+    check_file_writable(args['stats'], 'Cannot write to provided output stats file: %s' % args['stats'])
 
 
-class SingleGuideReadCounts():
+class SingleGuideReadCounts:
   '''
   The class is just to reduce parameters passing around functions.
   '''

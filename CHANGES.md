@@ -1,5 +1,9 @@
 # Changes
 
+## next
+
+* added an option to output some stats to a JSON file when merging single guided CRISPR read counts (read counts output of `crisprReadCounts count-single`).
+
 ## 2.0.1
 
 * Used the Quay.io repo for original Perl code for this code base 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -e
-pytest --cov-branch --cov-report term --cov-report html --cov=crispr_read_counts --cov-fail-under=87 -x
+pytest --cov-branch --cov-report term --cov-report html --cov=crispr_read_counts --cov-fail-under=89 -x
 set +e
 
 # these should not die:
