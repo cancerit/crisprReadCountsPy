@@ -29,7 +29,7 @@ FROM ubuntu:20.04
 
 LABEL maintainer="cgphelp@sanger.ac.uk" \
       uk.ac.sanger.cgp="Cancer, Ageing and Somatic Mutation, Wellcome Trust Sanger Institute" \
-      version="2.0.1" \
+      version="2.1.0" \
       description="crisprReadCounts docker container"
 
 RUN apt-get -yq update
