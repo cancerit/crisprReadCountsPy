@@ -1,4 +1,3 @@
-
 import sys
 from typing import List
 from .utils import (
@@ -31,7 +30,7 @@ def count_dual(args):
       lookupGuidePair, lookupGuideLeft, lookupGuideRight, lookupGuideLeftRC, lookupGuideRightRC, lookupSafe)
 
   total_guides, zero_guides, less_30_guides = write_guides_return_stats(
-    args['library'], args['counts'], lookupGuidePair, header_index)
+    args['library'], args['counts'], args['sample'], lookupGuidePair, header_index)
 
   write_stats(
     args['stats'],
@@ -48,24 +47,17 @@ def count_dual(args):
 
 
 def validate_inputs(args):
-  if not check_file_readable(args['library']):
-    sys.exit(error_msg('Provided library file does not exist or have no permission to read: %s' % {args['library']}))
-  if not check_file_readable(args['fastq1']):
-    sys.exit(error_msg('Provided FastQ file does not exist or have no permission to read: %s' % args['fastq1']))
-  if not check_file_readable(args['fastq2']):
-    sys.exit(error_msg('Provided FastQ file does not exist or have no permission to read: %s' % args['fastq2']))
+  for file_type, file_path in zip(['library', 'FastQ', 'FastQ'], [args['library'], args['fastq1'], args['fastq2']]):
+    check_file_readable(file_path, f'Provided {file_type} file does not exist or have no permission to read: {file_path}')
 
-  if not check_file_writable(args['reads']):
-    sys.exit(error_msg('Cannot write to provided output classified reads file: {}' % args['reads']))
-  if not check_file_writable(args['counts']):
-    sys.exit(error_msg('Cannot write to provided output counts file: {}' % args['counts']))
-  if not check_file_writable(args['stats']):
-    sys.exit(error_msg('Cannot write to provided output stats file: {}' % args['stats']))
+  for file_type, file_path in zip(['classified reads', 'counts', 'stats'], [args['reads'], args['counts'], args['stats']]):
+    check_file_writable(file_path, f'Cannot write to provided output {file_type} file: {file_path}.')
 
 
 def library_to_dicts(library: str):
 
-  lookupGuidePair, lookupGuideLeft, lookupGuideRight, lookupGuideLeftRC, lookupGuideRightRC, lookupSafe, header_index = {}, {}, {}, {}, {}, {}, {}
+  lookupGuidePair, header_index = {}, {}
+  lookupGuideLeft, lookupGuideRight, lookupGuideLeftRC, lookupGuideRightRC, lookupSafe = set(), set(), set(), set(), set()
 
   with open(library) as f:
     header = f.readline().strip().split('\t')
@@ -80,21 +72,26 @@ def library_to_dicts(library: str):
       if expected_col_name not in header_index.keys():
         sys.exit(error_msg(f'Cound not find named column: {expected_col_name} in the input library file, please check file columns and try again.'))
 
+    header_index_left_seq = header_index['sgrna_left_seq']
+    header_index_right_seq = header_index['sgrna_right_seq']
+    header_index_left_id = header_index['sgrna_left_id']
+    header_index_right_id = header_index['sgrna_right_id']
+
     for line in f:
       line_split = line.strip().split('\t')
-      sgSeqL = line_split[header_index['sgrna_left_seq']]
-      sgSeqR = line_split[header_index['sgrna_right_seq']]
+      sgSeqL = line_split[header_index_left_seq]
+      sgSeqR = line_split[header_index_right_seq]
       sgSeqLrc = rev_compl(sgSeqL)
       sgSeqRrc = rev_compl(sgSeqR)
-      lookupGuideLeft[sgSeqL] = 0
-      lookupGuideRight[sgSeqR] = 0
-      lookupGuideLeftRC[sgSeqLrc] = 0
-      lookupGuideRightRC[sgSeqRrc] = 0
+      lookupGuideLeft.add(sgSeqL)
+      lookupGuideRight.add(sgSeqR)
+      lookupGuideLeftRC.add(sgSeqLrc)
+      lookupGuideRightRC.add(sgSeqRrc)
       # store the safe sequences (guide id starts with F followed by a number)
-      if SAFE_SEQ_FORMAT.match(line_split[header_index['sgrna_left_id']]):
-        lookupSafe[sgSeqL] = 0
-      if SAFE_SEQ_FORMAT.match(line_split[header_index['sgrna_right_id']]):
-        lookupSafe[sgSeqR] = 0
+      if SAFE_SEQ_FORMAT.match(line_split[header_index_left_id]):
+        lookupSafe.add(sgSeqL)
+      if SAFE_SEQ_FORMAT.match(line_split[header_index_right_id]):
+        lookupSafe.add(sgSeqR)
       lookupGuidePair[sgSeqLrc + sgSeqR] = 0
 
   return lookupGuidePair, lookupGuideLeft, lookupGuideRight, lookupGuideLeftRC, lookupGuideRightRC, lookupSafe, header_index
@@ -124,13 +121,15 @@ def write_classified_reads_to_file_return_stats(
           lookupGuidePair[pair_guide] += 1
           r2rc = rev_compl(r2)
           label1 = 'safe' if r2rc in lookupSafe else 'gRNA1'
+          label1_safe: bool = label1 == 'safe'
           label2 = 'safe' if r1 in lookupSafe else 'gRNA2'
+          label2_safe: bool = label2 == 'safe'
           # count number of occurrances
-          if label1 == 'gRNA1' and label2 == 'gRNA2':
+          if not label1_safe and not label2_safe:
             n_grna1_grna2 += 1
-          elif label1 == 'gRNA1' and label2 == 'safe':
+          elif not label1_safe and label2_safe:
             n_grna1_safe += 1
-          elif label1 == 'safe' and label2 == 'gRNA2':
+          elif label1_safe and not label2_safe:
             n_safe_grna2 += 1
           else:
             n_safe_safe += 1
@@ -166,11 +165,11 @@ def write_classified_reads_to_file_return_stats(
   return n_safe_safe, n_grna1_safe, n_safe_grna2, n_grna1_grna2, n_grna1, n_grna2, n_incorrect_pair, n_miss_miss, read_counts
 
 
-def write_guides_return_stats(library: str, out_counts: str, lookupGuidePair, header_index):
+def write_guides_return_stats(library: str, out_counts: str, sample_name: str, lookupGuidePair, header_index):
   zero_guides, less_30_guides = 0, 0
   with open(library, 'r') as lib, open(out_counts, 'w') as out_ct:
     next(lib)
-    out_ct.write('\t'.join(['unique_id', 'target_id', 'gene_pair_id', 'sample_name']) + '\n')
+    out_ct.write('\t'.join(['unique_id', 'target_id', 'gene_pair_id', sample_name]) + '\n')
     for line_count, line in enumerate(lib, 1):
       ele = line.strip().split('\t')
       sgSeqL = ele[header_index['sgrna_left_seq']]
